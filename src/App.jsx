@@ -1,11 +1,28 @@
 import React from 'react';
+import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import Header from './Components/header';
+import Todo from './Components/Todo/index';
+import Settings from './Components/Todo/settings';
+import { TasksPerPageProvider } from './contexts/TasksPerPageContext';
+import { TasksProvider } from './contexts/TasksContext';
 
-import Todo from './Components/Todo';
 
-export default class App extends React.Component {
-  render() {
-    return (
-      <Todo />
-    );
-  }
-}
+const App = () => {
+  return (
+    <BrowserRouter>
+      <TasksProvider>
+        <TasksPerPageProvider>
+          <Header />
+          <Routes>
+            <Route path="/" element={<Todo />} />
+            <Route path="/settings" element={<Settings />} />
+            {/* Add more routes for additional pages */}
+          </Routes>
+        </TasksPerPageProvider>
+      </TasksProvider>
+
+    </BrowserRouter>
+  );
+};
+
+export default App;

@@ -1,44 +1,63 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import useForm from '../../hooks/form';
 import { v4 as uuid } from 'uuid';
+import { useTasksPerPage } from '../../contexts/TasksPerPageContext';
+import { TasksContext } from '../../contexts/TasksContext';
+
 
 const Todo = () => {
+  const { tasks, setTasks } = useContext(TasksContext);
+  const { tasksPerPage } = useTasksPerPage();
+
   const [defaultValues] = useState({
     difficulty: 4,
   });
-  const [list, setList] = useState([]);
-  const [incomplete, setIncomplete] = useState([]);
-  const { handleChange, handleSubmit } = useForm(addItem, defaultValues);
 
-  function addItem(item) {
-    item.id = uuid();
-    item.complete = false;
-    setList([...list, item]);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [incomplete, setIncomplete] = useState([]);
+  const { handleChange, handleSubmit } = useForm(addTask, defaultValues);
+
+  function addTask(task) {
+    task.id = uuid();
+    task.complete = false;
+    setTasks((prevTasks) => [...prevTasks, task]);
   }
 
-  function deleteItem(id) {
-    const items = list.filter(item => item.id !== id);
-    setList(items);
+  function deleteTask(id) {
+    setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
   }
 
   function toggleComplete(id) {
-    const updatedList = list.map(item => {
-      if (item.id === id) {
-        item.complete = !item.complete;
-      }
-      return item;
-    });
-    setList(updatedList);
+    setTasks((prevTasks) =>
+      prevTasks.map((task) => {
+        if (task.id === id) {
+          task.complete = !task.complete;
+        }
+        return task;
+      })
+    );
   }
 
   useEffect(() => {
-    let incompleteCount = list.filter(item => !item.complete).length;
+    let incompleteCount = tasks.filter((task) => !task.complete).length;
     setIncomplete(incompleteCount);
     document.title = `To Do List: ${incomplete}`;
     // linter will want 'incomplete' added to dependency array unnecessarily.
     // disable code used to avoid linter warning
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [list]);
+  }, [tasks]);
+
+  const totalPages = Math.ceil(tasks.length / tasksPerPage);
+
+  const limitedTasks = tasks.slice((currentPage - 1) * tasksPerPage, currentPage * tasksPerPage);
+
+  const handlePrevPage = () => {
+    setCurrentPage((prevPage) => prevPage - 1);
+  };
+
+  const handleNextPage = () => {
+    setCurrentPage((prevPage) => prevPage + 1);
+  };
 
   return (
     <>
@@ -69,17 +88,35 @@ const Todo = () => {
         </label>
       </form>
 
-      {list.map(item => (
-        <div key={item.id}>
-          <p>{item.text}</p>
-          <div onClick={() => toggleComplete(item.id)}>Complete: {item.complete.toString()}</div>
-          <button onClick={() => deleteItem(item.id)}>x</button>
-          <p><small>Assigned to: {item.assignee}</small></p>
-          <p><small>Difficulty: {item.difficulty}</small></p>
-          <button onClick={() => toggleComplete(item.id)}>Toggle Complete</button>
-          <hr />
-        </div>
-      ))}
+      {limitedTasks.map((task) => (
+      <div key={task.id}>
+        <p>{task.text}</p>
+        <div onClick={() => toggleComplete(task.id)}>Complete: {task.complete.toString()}</div>
+        <button onClick={() => deleteTask(task.id)}>x</button>
+        <p>
+          <small>Assigned to: {task.assignee}</small>
+        </p>
+        <p>
+          <small>Difficulty: {task.difficulty}</small>
+        </p>
+        <button onClick={() => toggleComplete(task.id)}>Toggle Complete</button>
+        <hr />
+      </div>
+    ))}
+
+      <div>
+        <button onClick={handlePrevPage} disabled={currentPage === 1}>
+          Previous
+        </button>
+        {[...Array(totalPages)].map((_, index) => (
+          <button key={index + 1} onClick={() => setCurrentPage(index + 1)} disabled={currentPage === index + 1}>
+            {index + 1}
+          </button>
+        ))}
+        <button onClick={handleNextPage} disabled={currentPage === totalPages}>
+          Next
+        </button>
+      </div>
     </>
   );
 };
