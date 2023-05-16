@@ -4,7 +4,6 @@ import { v4 as uuid } from 'uuid';
 import { useTasksPerPage } from '../../contexts/TasksPerPageContext';
 import { TasksContext } from '../../contexts/TasksContext';
 
-
 const Todo = () => {
   const { tasks, setTasks } = useContext(TasksContext);
   const { tasksPerPage } = useTasksPerPage();
@@ -15,6 +14,7 @@ const Todo = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [incomplete, setIncomplete] = useState([]);
+  const [sortBy, setSortBy] = useState(''); // Sorting option state
   const { handleChange, handleSubmit } = useForm(addTask, defaultValues);
 
   function addTask(task) {
@@ -42,14 +42,22 @@ const Todo = () => {
     let incompleteCount = tasks.filter((task) => !task.complete).length;
     setIncomplete(incompleteCount);
     document.title = `To Do List: ${incomplete}`;
-    // linter will want 'incomplete' added to dependency array unnecessarily.
-    // disable code used to avoid linter warning
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [tasks]);
 
   const totalPages = Math.ceil(tasks.length / tasksPerPage);
 
-  const limitedTasks = tasks.slice((currentPage - 1) * tasksPerPage, currentPage * tasksPerPage);
+  const sortedTasks = [...tasks]; // Create a copy of tasks to avoid mutating the original array
+
+  if (sortBy === 'difficulty') {
+    sortedTasks.sort((a, b) => a.difficulty - b.difficulty);
+  } else if (sortBy === 'name') {
+    sortedTasks.sort((a, b) => a.text.localeCompare(b.text));
+  }
+
+  const limitedTasks = sortedTasks.slice(
+    (currentPage - 1) * tasksPerPage,
+    currentPage * tasksPerPage
+  );
 
   const handlePrevPage = () => {
     setCurrentPage((prevPage) => prevPage - 1);
@@ -58,6 +66,11 @@ const Todo = () => {
   const handleNextPage = () => {
     setCurrentPage((prevPage) => prevPage + 1);
   };
+
+  const handleSortByChange = (event) => {
+    setSortBy(event.target.value);
+  };
+
 
   return (
     <>
@@ -87,6 +100,17 @@ const Todo = () => {
           <button type="submit">Add Item</button>
         </label>
       </form>
+
+            {/* Sorting options */}
+            <div>
+        <label>
+          Sort by:
+          <select value={sortBy} onChange={handleSortByChange}>
+            <option value="">None</option>
+            <option value="difficulty">Difficulty</option>
+          </select>
+        </label>
+      </div>
 
       {limitedTasks.map((task) => (
       <div key={task.id}>
